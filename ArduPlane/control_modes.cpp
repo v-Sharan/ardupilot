@@ -52,6 +52,9 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::GUIDED:
         ret = &mode_guided;
         break;
+    case Mode::Number::STRIKE:
+        ret = &mode_strike;
+        break;
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;

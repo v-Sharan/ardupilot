@@ -262,6 +262,20 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     ASCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
 
+    // @Param: STR_LAT
+    // @DisplayName: Strike Latitude
+    // @Description: Defines the latitude of the strike point for use in strike and attack missions.
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(str_lat,          "STR_LAT",  0),
+
+    // @Param: STR_LON
+    // @DisplayName: Strike Longitude
+    // @Description: Defines the Longitude of the strike point for use in strike and attack missions.
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(str_lon,          "STR_LON",  0),
+
     // @Param: RTL_RADIUS
     // @DisplayName: RTL loiter radius
     // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used. For quadplanes with Q_RTL_MODE set to 1 (Enabled), this value is used to set the minimum radius at which the plane will transition from fixed-wing to VTOL mode for landing.

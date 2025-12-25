@@ -317,6 +317,11 @@ public:
         k_param_command_index,  // unused
         k_param_waypoint_radius,
         k_param_loiter_radius,
+
+        //strike 
+        k_param_str_lat,
+        k_param_str_lon,
+        
         k_param_fence_action,
         k_param_fence_total,
         k_param_fence_channel, // unused - moved to RC option
@@ -396,6 +401,11 @@ public:
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 rtl_radius;
+
+    //strike 
+
+    AP_Int32 str_lat;
+    AP_Int32 str_lon;
 
     // Fly-by-wire
     //

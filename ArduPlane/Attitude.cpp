@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include <cmath>
 
 /*
   calculate speed scaling number for control surfaces. This is applied
@@ -642,6 +643,12 @@ void Plane::calc_nav_pitch()
 {
     int32_t commanded_pitch = TECS_controller.get_pitch_demand();
     nav_pitch_cd = constrain_int32(commanded_pitch, pitch_limit_min*100, aparm.pitch_limit_max.get()*100);
+    // gcs().send_text(MAV_SEVERITY_DEBUG,"Commanded Nav Pitch Cd: %d -- Nav Pitch Cd: %d", commanded_pitch,nav_pitch_cd);
+}
+
+void Plane::cal_pitch_strike()
+{
+
 }
 
 

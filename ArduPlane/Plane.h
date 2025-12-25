@@ -162,6 +162,7 @@ public:
     friend class ModeLoiter;
     friend class ModeAvoidADSB;
     friend class ModeGuided;
+    friend class ModeStrike;
     friend class ModeInitializing;
     friend class ModeManual;
     friend class ModeQStabilize;
@@ -314,6 +315,7 @@ private:
     ModeAvoidADSB mode_avoidADSB;
 #endif
     ModeGuided mode_guided;
+    ModeStrike mode_strike;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
 #if HAL_QUADPLANE_ENABLED
@@ -595,6 +597,8 @@ private:
         Location target_location;
         // target_location altitude is uses to hold some flag values:
         bool target_location_alt_is_minus_one() const;
+
+        // bool target_location_alt_is_minus_one_strike() const;
 
         float target_alt_rate;
         uint32_t target_alt_time_ms = 0;
@@ -926,6 +930,7 @@ private:
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
+    void cal_pitch_strike();
     float calc_speed_scaler(void);
     float get_speed_scaler(void) const { return surface_speed_scaler; }
     bool stick_mixing_enabled(void);

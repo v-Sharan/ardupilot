@@ -12,7 +12,7 @@ public:
         SERVOTEST=3,
         GUIDED=4,
         AUTO=10,
-        INITIALISING=16
+        INITIALISING=16,
         // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
@@ -88,7 +88,6 @@ private:
     bool _use_pitch_rate;
     float _pitch_rate_rads;
 };
-
 class ModeInitialising : public Mode {
 public:
     Mode::Number number() const override { return Mode::Number::INITIALISING; }
