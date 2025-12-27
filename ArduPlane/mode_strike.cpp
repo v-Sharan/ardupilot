@@ -359,10 +359,6 @@ void ModeStrike::update()
         plane.next_WP_loc);
     plane.calc_nav_roll();
 
-    // ---------- PITCH CONTROL (TECS-CORRECT) ----------
-    plane.pitch_limit_min_cd = -STRIKE_MAX_DIVE_ANGLE_CDEG;
-    plane.pitch_limit_max_cd = 0;
-
     plane.nav_pitch_cd = -blended_dive_cdeg;
 
     // ---------- THROTTLE CONTROL (TECS-CORRECT) ----------
@@ -386,16 +382,6 @@ void ModeStrike::update()
         strike_throttle - plane.aparm.throttle_cruise.get();
 
     plane.calc_throttle();
-}
-
-// ------------------------------------------------------
-
-void ModeStrike::_exit()
-{
-    // Restore limits
-    plane.pitch_limit_min_cd = plane.aparm.pitch_limit_min.get();
-    plane.pitch_limit_max_cd = plane.aparm.pitch_limit_max.get();
-    plane.throttle_nudge = 0;
 }
 
 void ModeStrike::navigate()
