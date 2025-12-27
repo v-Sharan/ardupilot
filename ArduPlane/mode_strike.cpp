@@ -168,15 +168,15 @@ void ModeStrike::update()
         // Blend between navigation pitch and dive angle
         int32_t nav_pitch = plane.TECS_controller.get_pitch_demand();
         int32_t strike_pitch = dive_angle_cdeg;
-        plane.nav_pitch_cd = - (nav_pitch * approach_factor + strike_pitch * (1.0f - approach_factor));
+        plane.nav_pitch_cd = nav_pitch * approach_factor + strike_pitch * (1.0f - approach_factor);
     }
     
     // Constrain pitch to limits
-    plane.nav_pitch_cd =  - constrain_int32(
-        plane.nav_pitch_cd,
-        plane.pitch_limit_min * 100,
-        plane.aparm.pitch_limit_max.get() * 100
-    );
+    // plane.nav_pitch_cd =  constrain_int32(
+    //     plane.nav_pitch_cd,
+    //     plane.pitch_limit_min * 100,
+    //     plane.aparm.pitch_limit_max.get() * 100
+    // );
     
     // THROTTLE CONTROL - Maximum energy
     if (in_terminal_dive) {
