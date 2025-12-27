@@ -159,26 +159,18 @@ void ModeStrike::update()
             strike_complete = true;
             return;
         }
-    }
-    // else {
-    //     // Approach phase: Use computed dive angle but allow navigation blending
-    //     // Gradually transition to dive angle as we approach terminal distance
-    //     float approach_factor = horizontal_distance / STRIKE_TERMINAL_DISTANCE_M;
-    //     approach_factor = constrain_float(approach_factor, 0.0f, 1.0f);
+    }else {
+        // Approach phase: Use computed dive angle but allow navigation blending
+        // Gradually transition to dive angle as we approach terminal distance
+        float approach_factor = horizontal_distance / STRIKE_TERMINAL_DISTANCE_M;
+        approach_factor = constrain_float(approach_factor, 0.0f, 1.0f);
         
-    //     // Blend between navigation pitch and dive angle
-    //     int32_t nav_pitch = plane.TECS_controller.get_pitch_demand();
-    //     int32_t strike_pitch = dive_angle_cdeg;
-    //     plane.nav_pitch_cd = nav_pitch * approach_factor + strike_pitch * (1.0f - approach_factor);
-    // }
-    
-    // Constrain pitch to limits
-    // plane.nav_pitch_cd =  constrain_int32(
-    //     plane.nav_pitch_cd,
-    //     plane.pitch_limit_min * 100,
-    //     plane.aparm.pitch_limit_max.get() * 100
-    // );
-    
+        // Blend between navigation pitch and dive angle
+        int32_t nav_pitch = plane.TECS_controller.get_pitch_demand();
+        int32_t strike_pitch = dive_angle_cdeg;
+        plane.nav_pitch_cd = -(nav_pitch * approach_factor + strike_pitch * (1.0f - approach_factor));
+    }
+
     // THROTTLE CONTROL - Maximum energy
     if (in_terminal_dive) {
         // Terminal dive: Force maximum throttle
@@ -190,16 +182,6 @@ void ModeStrike::update()
     } else {
         // Approach phase: Use TECS but push toward max throttle
         plane.calc_throttle();
-        // float current_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-        // float throttle_max = plane.aparm.throttle_max.get();
-        // if (throttle_max <= 0) {
-        //     throttle_max = 100.0f;
-        // }
-        // // Gradually increase throttle as we approach terminal distance
-        // float throttle_factor = 1.0f - (horizontal_distance / (STRIKE_TERMINAL_DISTANCE_M * 2.0f));
-        // throttle_factor = constrain_float(throttle_factor, 0.0f, 1.0f);
-        // float blended_throttle = current_throttle * (1.0f - throttle_factor) + throttle_max * throttle_factor;
-        // SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, blended_throttle);
     }
 }
 
