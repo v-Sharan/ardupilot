@@ -32,7 +32,6 @@ bool ModeStrike::_enter()
     // Store target location
     target_location.lat = lat;
     target_location.lng = lon;
-    target_location.set_alt_cm(0, Location::AltFrame::ABOVE_HOME);
 
     // Initialize strike state
     in_terminal_dive = false;
@@ -168,7 +167,7 @@ void ModeStrike::update()
         
         // Blend between navigation pitch and dive angle
         int32_t nav_pitch = plane.TECS_controller.get_pitch_demand();
-        int32_t strike_pitch = -dive_angle_cdeg;
+        int32_t strike_pitch = dive_angle_cdeg;
         plane.nav_pitch_cd = nav_pitch * approach_factor + strike_pitch * (1.0f - approach_factor);
     }
     
