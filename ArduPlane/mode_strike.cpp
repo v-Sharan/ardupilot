@@ -197,7 +197,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_GPS/AP_GPS.h>
 
-// ---------------- CONFIG ----------------
+// ================= CONFIG =================
 #define STRIKE_TERMINAL_DISTANCE_M     500.0f
 #define STRIKE_MIN_DISTANCE_M           2.0f
 #define STRIKE_MIN_ALT_AGL_M             1.0f
@@ -205,8 +205,9 @@
 #define STRIKE_MAX_DIVE_ANGLE_CDEG   8500   // 85 deg
 #define STRIKE_MIN_DIVE_ANGLE_CDEG   1500   // 15 deg
 
+#define STRIKE_GLIDE_ANGLE_DEG          4.0f   // Glide slope
 #define METERS_PER_DEG_LAT        111319.5f
-// ---------------------------------------
+// ==========================================
 
 bool ModeStrike::_enter()
 {
@@ -214,7 +215,8 @@ bool ModeStrike::_enter()
     int32_t lon = plane.aparm.str_lon.get();
 
     if (lat == 0 && lon == 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Strike: Invalid target");
+        gcs().send_text(MAV_SEVERITY_CRITICAL,
+                        "Strike: Invalid target");
         return false;
     }
 
@@ -225,7 +227,7 @@ bool ModeStrike::_enter()
     strike_complete  = false;
 
     gcs().send_text(MAV_SEVERITY_INFO,
-                    "Strike target set: %ld %ld",
+                    "Strike target: %ld %ld",
                     (long)lat, (long)lon);
 
     return true;
@@ -237,13 +239,14 @@ void ModeStrike::update()
 {
     // ---------- FAILSAFE ----------
     if (plane.gps.status() < AP_GPS::GPS_OK_FIX_2D) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Strike: GPS LOST");
+        gcs().send_text(MAV_SEVERITY_CRITICAL,
+                        "Strike: GPS LOST");
         return;
     }
 
     const Location &current = plane.current_loc;
 
-    // ---------- AGL ----------
+    // ---------- AGL (SAFE & COMPILE-CORRECT) ----------
     float altitude_agl = plane.relative_altitude; // meters
 
     if (plane.terrain.enabled()) {
@@ -252,11 +255,15 @@ void ModeStrike::update()
             altitude_agl = terr_agl;
         }
     }
+
     // ---------- DISTANCE ----------
-    float dx = (target_location.lat - current.lat) * 1e-7f * METERS_PER_DEG_LAT;
+    float dx = (target_location.lat - current.lat) *
+               1e-7f * METERS_PER_DEG_LAT;
+
     float lat_rad = radians(current.lat * 1e-7f);
-    float dy = (target_location.lng - current.lng) * 1e-7f *
-               METERS_PER_DEG_LAT * cosf(lat_rad);
+
+    float dy = (target_location.lng - current.lng) *
+               1e-7f * METERS_PER_DEG_LAT * cosf(lat_rad);
 
     float horizontal_distance = sqrtf(dx * dx + dy * dy);
 
@@ -266,19 +273,61 @@ void ModeStrike::update()
 
         strike_complete = true;
 
-        plane.throttle_nudge = -plane.aparm.throttle_cruise.get();
+        plane.throttle_nudge =
+            -plane.aparm.throttle_cruise.get();
+
         plane.set_mode(plane.mode_fbwa,
                        ModeReason::STRIKE_COMPLETE);
 
         gcs().send_text(MAV_SEVERITY_WARNING,
                         "Strike complete");
+
         return;
     }
 
-    // ---------- TERMINAL ENTRY ----------
-    if (!in_terminal_dive &&
-        horizontal_distance < STRIKE_TERMINAL_DISTANCE_M) {
+    // ---------- HEADING CONTROL (ALWAYS ACTIVE) ----------
+    plane.prev_WP_loc = current;
+    plane.next_WP_loc = target_location;
+    plane.nav_controller->update_waypoint(
+        plane.prev_WP_loc,
+        plane.next_WP_loc);
+    plane.calc_nav_roll();
 
+    // ==================================================
+    // PHASE 1: GLIDE APPROACH
+    // ==================================================
+    if (horizontal_distance > STRIKE_TERMINAL_DISTANCE_M) {
+
+        // Gentle glide slope
+        float glide_drop =
+            tanf(radians(STRIKE_GLIDE_ANGLE_DEG)) *
+            horizontal_distance;
+
+        float desired_agl =
+            altitude_agl - glide_drop;
+
+        desired_agl = MAX(desired_agl, STRIKE_MIN_ALT_AGL_M);
+
+        // Command lower altitude (TECS-controlled glide)
+        plane.target_altitude =
+            (current.alt * 0.01f) -
+            (altitude_agl - desired_agl);
+
+        // Idle / near-idle throttle
+        plane.throttle_nudge =
+            -plane.aparm.throttle_cruise.get();
+
+        // Let TECS manage pitch safely
+        plane.calc_throttle();
+
+        return;
+    }
+
+    // ==================================================
+    // PHASE 2: TERMINAL STRIKE
+    // ==================================================
+
+    if (!in_terminal_dive) {
         in_terminal_dive = true;
         gcs().send_text(MAV_SEVERITY_WARNING,
                         "Strike: TERMINAL DIVE");
@@ -286,7 +335,8 @@ void ModeStrike::update()
 
     // ---------- BASE DIVE GEOMETRY ----------
     float base_dive_rad =
-        atan2f(MAX(altitude_agl, 0.1f), horizontal_distance);
+        atan2f(MAX(altitude_agl, 0.1f),
+               horizontal_distance);
 
     float base_dive_cdeg =
         degrees(base_dive_rad) * 100.0f;
@@ -302,8 +352,11 @@ void ModeStrike::update()
         tas = ahrs.groundspeed();
     }
 
-    float cruise_tas = MAX(plane.aparm.airspeed_cruise.get(), 5.0f);
-    float speed_norm = constrain_float(tas / cruise_tas, 0.5f, 2.0f);
+    float cruise_tas =
+        MAX(plane.aparm.airspeed_cruise.get(), 5.0f);
+
+    float speed_norm =
+        constrain_float(tas / cruise_tas, 0.5f, 2.0f);
 
     // ---------- WIND ----------
     Vector3f wind;
@@ -312,7 +365,9 @@ void ModeStrike::update()
     if (ahrs.wind_estimate(wind)) {
         float bearing = atan2f(dy, dx);
         float wind_dir = atan2f(-wind.y, -wind.x);
-        wind_along = wind.length() * cosf(wrap_PI(wind_dir - bearing));
+        wind_along =
+            wind.length() *
+            cosf(wrap_PI(wind_dir - bearing));
     }
 
     // ---------- AGGRESSIVENESS ----------
@@ -333,70 +388,18 @@ void ModeStrike::update()
     dynamic_dive_cdeg = constrain_float(
         dynamic_dive_cdeg,
         STRIKE_MIN_DIVE_ANGLE_CDEG,
-        STRIKE_MAX_DIVE_ANGLE_CDEG
-    );
+        STRIKE_MAX_DIVE_ANGLE_CDEG);
 
-    // ---------- DISTANCE BLENDING ----------
-    float terminal_factor =
-        1.0f - constrain_float(horizontal_distance /
-                               STRIKE_TERMINAL_DISTANCE_M,
-                               0.0f, 1.0f);
 
-    // smoothstep
-    terminal_factor =
-        terminal_factor * terminal_factor *
-        (3.0f - 2.0f * terminal_factor);
+    plane.nav_pitch_cd = -dynamic_dive_cdeg;
 
-    float blended_dive_cdeg =
-        terminal_factor * dynamic_dive_cdeg +
-        (1.0f - terminal_factor) * base_dive_cdeg;
-
-    // ---------- HEADING CONTROL ----------
-    plane.prev_WP_loc = current;
-    plane.next_WP_loc = target_location;
-    plane.nav_controller->update_waypoint(
-        plane.prev_WP_loc,
-        plane.next_WP_loc);
-    plane.calc_nav_roll();
-
-    // ---------- PITCH CONTROL (TECS-CORRECT) ----------
-    // plane.pitch_limit_min_cd = -STRIKE_MAX_DIVE_ANGLE_CDEG;
-    // plane.pitch_limit_max_cd = 0;
-
-    plane.nav_pitch_cd = -blended_dive_cdeg;
-
-    // ---------- THROTTLE CONTROL (TECS-CORRECT) ----------
-    float strike_throttle =
-        plane.aparm.throttle_cruise.get() +
-        throttle_norm *
-        (plane.aparm.throttle_max.get() -
-         plane.aparm.throttle_cruise.get());
-
-    if (in_terminal_dive) {
-        strike_throttle = plane.aparm.throttle_max.get();
-    }
-
-    strike_throttle = constrain_float(
-        strike_throttle,
-        plane.aparm.throttle_cruise.get(),
-        plane.aparm.throttle_max.get()
-    );
-
+    // ---------- THROTTLE CONTROL ----------
     plane.throttle_nudge =
-        strike_throttle - plane.aparm.throttle_cruise.get();
+        plane.aparm.throttle_max.get() -
+        plane.aparm.throttle_cruise.get();
 
     plane.calc_throttle();
 }
-
-// ------------------------------------------------------
-
-// void ModeStrike::_exit()
-// {
-//     // Restore limits
-//     plane.pitch_limit_min_cd = plane.aparm.pitch_limit_min.get();
-//     plane.pitch_limit_max_cd = plane.aparm.pitch_limit_max.get();
-//     plane.throttle_nudge = 0;
-// }
 
 void ModeStrike::navigate()
 {
