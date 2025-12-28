@@ -21,8 +21,8 @@
 
 bool ModeStrike::_enter()
 {
-    int32_t lat = plane.aparm.str_lat.get();
-    int32_t lon = plane.aparm.str_lon.get();
+    double lat = plane.aparm.str_lat.get();
+    double lon = plane.aparm.str_lon.get();
     
     if(lat == 0 && lon == 0) {
         gcs().send_text(MAV_SEVERITY_CRITICAL,"Strike WP invalid");
