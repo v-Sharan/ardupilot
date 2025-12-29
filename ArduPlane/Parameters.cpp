@@ -276,6 +276,24 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     ASCALAR(str_lon,          "STR_LON",  0),
 
+    // @Param: STR_MIN_DIS
+    // @DisplayName: Strike Minimum Distance
+    // @Description: Defines the minimum distance to the strike point for use in strike and attack missions.
+    // @Units: m
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(str_min_dis,          "STR_MIN_DIS",  1),
+
+    // @Param: STR_TERM_DIS
+    // @DisplayName: Strike Terminal Distance
+    // @Description: Defines the terminal distance to the strike point for use in strike and attack missions.
+    // @Units: m
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(str_term_dis,          "STR_TERM_DIS",  500),
+
     // @Param: RTL_RADIUS
     // @DisplayName: RTL loiter radius
     // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used. For quadplanes with Q_RTL_MODE set to 1 (Enabled), this value is used to set the minimum radius at which the plane will transition from fixed-wing to VTOL mode for landing.

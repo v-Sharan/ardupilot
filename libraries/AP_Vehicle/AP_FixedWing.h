@@ -29,6 +29,8 @@ struct AP_FixedWing {
     AP_Int16 loiter_radius;
     AP_Int32 str_lat;
     AP_Int32 str_lon;
+    AP_Int16 str_min_dis;
+    AP_Int16 str_term_dis;
     AP_Float takeoff_throttle_max_t;
 
     struct Rangefinder_State {

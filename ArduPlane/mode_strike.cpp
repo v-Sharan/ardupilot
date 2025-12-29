@@ -21,15 +21,15 @@
 
 bool ModeStrike::_enter()
 {
-    double lat = plane.aparm.str_lat.get();
-    double lon = plane.aparm.str_lon.get();
+    int32_t lat = plane.aparm.str_lat.get();
+    int32_t lon = plane.aparm.str_lon.get();
     
     if(lat == 0 && lon == 0) {
         gcs().send_text(MAV_SEVERITY_CRITICAL,"Strike WP invalid");
         return false;
     }
 
-    // Store target location
+    // Store target location`
     target_location.lat = lat;
     target_location.lng = lon;
 
@@ -69,10 +69,13 @@ void ModeStrike::update()
     
     // Vertical distance (current altitude AGL)
     float vertical_distance = MAX(altitude_agl, 0.1f); // prevent division by zero
+
+    int16_t str_min_dis = plane.aparm.str_min_dis.get();;
+    int16_t str_term_dis = plane.aparm.str_term_dis.get();
     
     // Check termination conditions
     if (altitude_agl <= STRIKE_MIN_ALT_AGL_M || 
-        horizontal_distance < STRIKE_MIN_DISTANCE_M) {
+        horizontal_distance < str_min_dis) {
         strike_complete = true;
         gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Target reached or altitude too low");
         // Disarm or switch to failsafe mode
@@ -80,7 +83,7 @@ void ModeStrike::update()
     }
     
     // Check if we should enter terminal dive phase
-    if (!in_terminal_dive && horizontal_distance < STRIKE_TERMINAL_DISTANCE_M) {
+    if (!in_terminal_dive && horizontal_distance < str_term_dis) {
         in_terminal_dive = true;
         gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Entering terminal dive phase");
     }
@@ -162,13 +165,13 @@ void ModeStrike::update()
     }else {
         // Approach phase: Use computed dive angle but allow navigation blending
         // Gradually transition to dive angle as we approach terminal distance
-        float approach_factor = horizontal_distance / STRIKE_TERMINAL_DISTANCE_M;
+        float approach_factor = horizontal_distance / str_term_dis;
         approach_factor = constrain_float(approach_factor, 0.0f, 1.0f);
         
         // Blend between navigation pitch and dive angle
         int32_t nav_pitch = plane.TECS_controller.get_pitch_demand();
         int32_t strike_pitch = dive_angle_cdeg;
-        plane.nav_pitch_cd = -(nav_pitch * approach_factor + strike_pitch * (1.0f - approach_factor));
+        plane.nav_pitch_cd = nav_pitch * approach_factor + strike_pitch * (1.0f - approach_factor);
     }
 
     // THROTTLE CONTROL - Maximum energy

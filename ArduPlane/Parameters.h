@@ -321,6 +321,8 @@ public:
         //strike 
         k_param_str_lat,
         k_param_str_lon,
+        k_param_str_min_dis,
+        k_param_str_term_dis,
         
         k_param_fence_action,
         k_param_fence_total,
@@ -397,15 +399,15 @@ public:
     AP_Float scaling_speed;
 
     // Waypoints
-    //
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 rtl_radius;
 
     //strike 
-
     AP_Int32 str_lat;
     AP_Int32 str_lon;
+    AP_Int16 str_min_dis;
+    AP_Int16 str_term_dis;
 
     // Fly-by-wire
     //
