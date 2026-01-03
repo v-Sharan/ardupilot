@@ -21,17 +21,16 @@ bool ModeFollowMe::_enter()
     int32_t lon = plane.aparm.str_lon.get();
     
     if(lat == 0 && lon == 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"Strike WP invalid");
+        gcs().send_text(MAV_SEVERITY_CRITICAL,"FollowMe WP invalid");
         return false;
     }
 
     // Store target location`
     target_location.lat = lat;
     target_location.lng = lon;
-    
-    gcs().send_text(MAV_SEVERITY_INFO,"Strike Point Lat: %ld Lon: %ld", (long)lat, (long)lon);
-    gcs().send_text(MAV_SEVERITY_INFO,"Strike Point Lat: %.6f Lon: %.6f", lat / 1e7f, lon / 1e7f);
-    gcs().send_text(MAV_SEVERITY_INFO,"Entered Strike Mode - Aggressive Dive");
+
+    gcs().send_text(MAV_SEVERITY_INFO,"FollowMe Point Lat: %ld Lon: %ld", (long)lat, (long)lon);
+    gcs().send_text(MAV_SEVERITY_INFO,"FollowMe Point Lat: %.6f Lon: %.6f", lat / 1e7f, lon / 1e7f);
     
     // Set as guided waypoint for navigation
     plane.set_guided_WP(target_location);
