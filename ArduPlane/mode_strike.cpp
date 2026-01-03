@@ -38,7 +38,7 @@ bool ModeStrike::_enter()
     gcs().send_text(MAV_SEVERITY_INFO,"Entered Strike Mode - Aggressive Dive");
     
     // Set as guided waypoint for navigation
-    plane.set_guided_WP(target_location);
+    // plane.set_guided_WP(target_location);
     
     // Initialize small radius for direct aggressive approach
     active_radius_m = 5.0f;
@@ -46,150 +46,119 @@ bool ModeStrike::_enter()
     return true;
 }
 
+// function do_knife_edge(arg1, arg2)
+//     -- arg1 is pitch target, arg2 is duration
+//     local now = millis():tofloat() * 0.001
+//     if not running then
+//         running = true
+//         height_PI.reset()
+//         knife_edge_s = now
+//         gcs:send_text(5, string.format("Starting Pitch Change to %d°", arg1))
+//     end
+
+//     if (now - knife_edge_s) < arg2 then
+//         -- Get current pitch
+//         local pitch_deg = math.deg(ahrs:get_pitch_rad())
+//         local pitch_error = (arg1 - pitch_deg)
+
+//         -- Compute pitch rate using pitch error
+//         local pitch_rate = pitch_error / PITCH_TCONST:get()
+        
+//         -- Keep roll stable (neutralize roll rate)
+//         local roll_rate = 0
+
+//         -- Maintain altitude
+//         target_pitch = height_PI.update(initial_height)
+        
+//         -- Get yaw rate and throttle
+//         yaw_rate = 0  -- No yaw adjustment needed
+//         throttle = throttle_controller()
+
+//         -- Apply control
+//         set_rate_targets(throttle, roll_rate, pitch_rate, yaw_rate)
+//     else
+//         gcs:send_text(5, "Finished Pitch Change")
+//         running = false
+//         if vehicle:get_mode() == MODE_AUTO then
+//             vehicle:nav_script_time_done(last_id)
+//         else
+//             vehicle:nav_scripting_enable(255)
+//         end
+//         return
+//     end
+// end
+
 void ModeStrike::update()
 {
-    // Check for GPS loss - failsafe
-    if (plane.gps.status() < AP_GPS::GPS_OK_FIX_2D) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"Strike: GPS lost - FAILSAFE");
-        return;
-    }
+    // Update strike mode logic here
+    float desired_pitch_deg = -20.0f; // Targeting a steep dive angle of -45 degrees
+    float pitch_deg = ahrs.pitch_sensor * 0.01f;
+    float pitch_err = desired_pitch_deg - pitch_deg; // Targeting a steep dive angle of -desired degrees
+    gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Desired Pitch: %.2f Current Pitch: %.2f Pitch Error: %.2f", desired_pitch_deg, pitch_deg, pitch_err);
+    float pitch_rate = pitch_err / 0.05f;
 
-    // Get current position and altitude
-    const Location &current = plane.current_loc;
-    float altitude_agl = plane.relative_altitude; // meters AGL
-    
-    // Calculate horizontal distance to target using flat-earth approximation
-    float dx = (target_location.lat - current.lat) * 1e-7f * METERS_PER_DEG_LAT;
-    float curr_lat_rad = radians(current.lat * 1e-7f);
-    float dy = (target_location.lng - current.lng) * 1e-7f * METERS_PER_DEG_LAT * cosf(curr_lat_rad);
-    float horizontal_distance = sqrtf(dx*dx + dy*dy);
-    
-    // Vertical distance (current altitude AGL)
-    float vertical_distance = MAX(altitude_agl, 0.1f); // prevent division by zero
+    float pitch_rate_dps = constrain_float(pitch_rate,-plane.g.acro_pitch_rate,plane.g.acro_pitch_rate); // Time constant of 0.1 seconds for aggressive response
+    float roll_rate_dps = constrain_float(0.0, -plane.g.acro_roll_rate, plane.g.acro_roll_rate); // No roll change
+    float yaw_rate_dps = constrain_float(0.0, -plane.g.acro_yaw_rate, plane.g.acro_yaw_rate); // No yaw change
 
-    int16_t str_min_dis = plane.aparm.str_min_dis.get();;
-    int16_t str_term_dis = plane.aparm.str_term_dis.get();
-    
-    // Check termination conditions
-    if (altitude_agl <= STRIKE_MIN_ALT_AGL_M || 
-        horizontal_distance < str_min_dis) {
-        strike_complete = true;
-        gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Target reached or altitude too low");
-        // Disarm or switch to failsafe mode
-        return;
-    }
-    
-    // Check if we should enter terminal dive phase
-    if (!in_terminal_dive && horizontal_distance < str_term_dis) {
-        in_terminal_dive = true;
-        gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Entering terminal dive phase");
-    }
-    
-    // Calculate required dive angle (real-time)
-    float dive_angle_rad = atan2f(vertical_distance, horizontal_distance);
-    int32_t dive_angle_cdeg = constrain_int32(
-        degrees(dive_angle_rad) * 100.0f,
-        STRIKE_MIN_DIVE_ANGLE_CDEG,
-        STRIKE_MAX_DIVE_ANGLE_CDEG
-    );
-    
-    // Wind compensation for strike accuracy
-    Vector3f wind_vec;
-    float wind_speed = 0.0f;
-    float wind_direction_rad = 0.0f;
-    if (ahrs.wind_estimate(wind_vec)) {
-        wind_speed = wind_vec.length();
-        wind_direction_rad = atan2f(-wind_vec.y, -wind_vec.x); // NED to compass direction
-    }
-    
-    // Calculate target bearing
-    float target_bearing_rad = atan2f(dy, dx);
-    
-    // Project wind onto strike vector
-    float wind_along_path = 0.0f;
-    if (wind_speed > 0.1f) {
-        float wind_angle_diff = wrap_PI(wind_direction_rad - target_bearing_rad);
-        wind_along_path = wind_speed * cosf(wind_angle_diff);
-    }
-    
-    // Get current airspeed and groundspeed
-    float airspeed_ms = 0.0f;
-    bool airspeed_valid = ahrs.airspeed_TAS(airspeed_ms);
-    if (!airspeed_valid) {
-        // Fallback to groundspeed if no airspeed sensor
-        airspeed_ms = ahrs.groundspeed();
-    }
-    
-    float effective_ground_speed = airspeed_ms + wind_along_path;
-    
-    // Recompute dive angle if wind significantly affects ground speed
-    // (This is a simplified model - in practice, wind affects the trajectory)
-    if (fabsf(wind_along_path) > 2.0f && effective_ground_speed > 0.1f) {
-        // Adjust dive angle slightly based on wind component
-        // More headwind = steeper dive needed, tailwind = shallower
-        float wind_factor = 1.0f + (wind_along_path / effective_ground_speed) * 0.1f;
-        dive_angle_cdeg = constrain_int32(
-            dive_angle_cdeg * wind_factor,
-            STRIKE_MIN_DIVE_ANGLE_CDEG,
-            STRIKE_MAX_DIVE_ANGLE_CDEG
-        );
-    }
-    
-    // HEADING CONTROL - Lock heading to target
-    int32_t target_heading_cd = degrees(target_bearing_rad) * 100.0f;
-    target_heading_cd = wrap_360_cd(target_heading_cd);
-    
-    // Update navigation controller to point at target
-    plane.prev_WP_loc = current;
-    plane.next_WP_loc = target_location;
-    plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
-    
-    // Calculate roll for heading alignment (aggressive)
-    plane.calc_nav_roll();
-    
-    // PITCH CONTROL - Aggressive dive
-    if (in_terminal_dive) {
-        // Terminal dive phase: Force pitch to computed dive angle
-        plane.nav_pitch_cd = -dive_angle_cdeg; // Negative = pitch down
-        
-        // Check for excessive pitch (safety)
-        float current_pitch_deg = ahrs.pitch_sensor * 0.01f;
-        if (current_pitch_deg < -85.0f) {
-            gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Pitch limit exceeded");
-            strike_complete = true;
-            return;
+    float throttle = plane.throttle_controller();
+    gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Pitch Rate: %.2f Roll Rate: %.2f Yaw Rate: %.2f Throttle: %.2f", pitch_rate_dps, roll_rate_dps, yaw_rate_dps, throttle);
+
+    const float speed_scaler = plane.get_speed_scaler();
+    const float aileron = plane.rollController.get_rate_out(roll_rate_dps, speed_scaler);
+    const float elevator = plane.pitchController.get_rate_out(pitch_rate_dps, speed_scaler);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
+    float rudder = 0;
+    if (plane.yawController.rate_control_enabled()) {
+        rudder = 0 * 45;
+        if (true) {
+            rudder += plane.yawController.get_rate_out(yaw_rate_dps, speed_scaler, false);
+        } else {
+            plane.yawController.reset_I();
         }
-    }else {
-        // Approach phase: Use computed dive angle but allow navigation blending
-        // Gradually transition to dive angle as we approach terminal distance
-        float approach_factor = horizontal_distance / str_term_dis;
-        approach_factor = constrain_float(approach_factor, 0.0f, 1.0f);
-        
-        // Blend between navigation pitch and dive angle
-        int32_t nav_pitch = plane.TECS_controller.get_pitch_demand();
-        int32_t strike_pitch = dive_angle_cdeg;
-        plane.nav_pitch_cd = nav_pitch * approach_factor + strike_pitch * (1.0f - approach_factor);
     }
-
-    // THROTTLE CONTROL - Maximum energy
-    if (in_terminal_dive) {
-        // Terminal dive: Force maximum throttle
-        float throttle_max = plane.aparm.throttle_max.get();
-        if (throttle_max <= 0) {
-            throttle_max = 100.0f; // Default to 100% if not configured
-        }
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle_max);
-    } else {
-        // Approach phase: Use TECS but push toward max throttle
-        plane.calc_throttle();
-    }
-
-    if (strike_complete) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-        plane.set_mode(plane.mode_fbwa, ModeReason::STRIKE_COMPLETE);
-        return;
-    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 }
+
+// void ModeStrike::update()
+// {
+//     float desired_pitch_deg = -20.0f;
+//     float current_pitch_deg = ahrs.pitch_sensor * 0.01f;
+
+//     // Pitch error (deg)
+//     float pitch_error_deg = desired_pitch_deg - current_pitch_deg;
+    
+//     // Angle error → pitch rate (deg/sec)
+//     float pitch_rate_dps = pitch_error_deg / 0.05f;
+//     // const float dive_angle_dps = radians(dive_angle_rad);
+//     const float speed_scaler = plane.get_speed_scaler();
+//     Vector3f body_rates = plane.get_body_rates(pitch_rate_dps);
+//     const float aileron = plane.rollController.get_rate_out(body_rates.x, speed_scaler);
+//     const float elevator = plane.pitchController.get_rate_out(body_rates.y, speed_scaler);
+//     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
+//     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
+//     gcs().send_text(MAV_SEVERITY_WARNING,"Strike: %.4f deg dive elevator: %.4f", body_rates.y,elevator);
+//     float rudder = 0;
+//     if (plane.yawController.rate_control_enabled()) {
+//         rudder = 0 * 45;
+//         if (true) {
+//             rudder += plane.yawController.get_rate_out(0, speed_scaler, false);
+//         } else {
+//             plane.yawController.reset_I();
+//         }
+//     }
+//     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
+//     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
+
+//     float pitch_rad = ahrs.pitch_sensor * 0.01f * DEG_TO_RAD;
+//     float throttle = plane.aparm.throttle_cruise.get() + sin(pitch_rad) * 80.0f;
+//     float throttle_con = constrain_float(throttle, 0.0f, 100.0f);
+//     float throttle_pct = constrain_float(throttle_con, plane.aparm.throttle_min, plane.aparm.throttle_max);
+//     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle_pct);
+// }
 
 void ModeStrike::navigate()
 {

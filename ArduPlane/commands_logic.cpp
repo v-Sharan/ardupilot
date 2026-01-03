@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include <AP_Math/AP_Math.h>
 
 /********************************************************************************/
 // Command Event Handlers
@@ -1201,6 +1202,14 @@ float Plane::get_wp_radius() const
     }
 #endif
     return g.waypoint_radius;
+}
+
+float Plane::throttle_controller()
+{
+    float pitch_rad = ahrs.get_pitch_rad();
+    float thr_ff = 80.0f;
+    float throttle = aparm.throttle_cruise + sin(pitch_rad) * thr_ff;
+    return constrain_float(throttle, 0, 100.0);
 }
 
 #if AP_SCRIPTING_ENABLED

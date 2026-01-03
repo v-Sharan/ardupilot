@@ -494,7 +494,7 @@ function do_knife_edge(arg1,arg2)
     end
 end
 
-function do_knife_edge(arg1, arg2)
+function do_knife_edge_pitch(arg1, arg2)
     -- arg1 is pitch target, arg2 is duration
     local now = millis():tofloat() * 0.001
     if not running then
@@ -905,6 +905,8 @@ function do_trick(cmd,arg1,arg2)
          do_4point_roll(arg1,arg2)
       elseif cmd == 8 then
          do_split_s(arg1,arg2)
+      elseif cmd == 9 then
+         do_knife_edge_pitch(arg1,arg2)
       end
 end
 

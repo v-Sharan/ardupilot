@@ -1020,11 +1020,12 @@ private:
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
+    float throttle_controller();
 
     bool is_land_command(uint16_t cmd) const;
 
     bool do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float rhtottle_pct);
-    /*
+    /*W
       return true if in a specific AUTO mission command
     */
     bool in_auto_mission_id(uint16_t command) const;
