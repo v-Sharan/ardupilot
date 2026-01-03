@@ -76,6 +76,7 @@ void Plane::rc_failsafe_short_on_event()
         FALLTHROUGH;
     }
     case Mode::Number::AVOID_ADSB:
+    case Mode::Number::FOLLOWME:
     case Mode::Number::GUIDED:
     case Mode::Number::STRIKE:
     case Mode::Number::LOITER:
@@ -199,6 +200,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::STRIKE:
+    case Mode::Number::FOLLOWME:
     case Mode::Number::GUIDED:
 
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {

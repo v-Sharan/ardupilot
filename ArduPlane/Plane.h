@@ -163,6 +163,7 @@ public:
     friend class ModeAvoidADSB;
     friend class ModeGuided;
     friend class ModeStrike;
+    friend class ModeFollowMe;
     friend class ModeInitializing;
     friend class ModeManual;
     friend class ModeQStabilize;
@@ -316,6 +317,7 @@ private:
 #endif
     ModeGuided mode_guided;
     ModeStrike mode_strike;
+    ModeFollowMe mode_followme;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
 #if HAL_QUADPLANE_ENABLED

@@ -53,6 +53,7 @@ public:
         GUIDED        = 15,
         INITIALISING  = 16,
         STRIKE=32,
+        FOLLOWME=33,
 #if HAL_QUADPLANE_ENABLED
         QSTABILIZE    = 17,
         QHOVER        = 18,
@@ -400,6 +401,49 @@ protected:
 
 private:
     float active_radius_m;
+};
+
+class ModeFollowMe : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::FOLLOWME; }
+    const char *name() const override { return "FOLLOWME"; }
+    const char *name4() const override { return "FOLM"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void navigate() override;
+
+    virtual bool is_guided_mode() const override { return true; }
+
+    bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
+
+    bool does_auto_throttle() const override { return true; }
+
+    // handle a guided target request from GCS
+    bool handle_guided_request(Location target_loc) override;
+
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
+protected:
+
+    bool _enter() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override { return true; }
+#if AP_QUICKTUNE_ENABLED
+    bool supports_quicktune() const override { return true; }
+#endif
+
+private:
+    float active_radius_m;
+    Location target_location;
 };
 
 class ModeStrike : public Mode

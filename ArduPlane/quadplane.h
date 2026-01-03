@@ -55,6 +55,7 @@ public:
     friend class ModeAvoidADSB;
     friend class ModeGuided;
     friend class ModeStrike;
+    friend class ModeFollowMe;
     friend class ModeQHover;
     friend class ModeQLand;
     friend class ModeQLoiter;
