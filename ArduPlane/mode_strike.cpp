@@ -91,10 +91,10 @@ bool ModeStrike::_enter()
 void ModeStrike::update()
 {
     // Update strike mode logic here
-    float desired_pitch_deg = -20.0f; // Targeting a steep dive angle of -45 degrees
-    float pitch_deg = ahrs.pitch_sensor * 0.01f;
+    float desired_pitch_deg = plane.aparm.str_min_dis; // Targeting a steep dive angle of -45 degrees
+    float pitch_deg = degrees(ahrs.get_pitch_rad());
     float pitch_err = desired_pitch_deg - pitch_deg; // Targeting a steep dive angle of -desired degrees
-    gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Desired Pitch: %.2f Current Pitch: %.2f Pitch Error: %.2f", desired_pitch_deg, pitch_deg, pitch_err);
+    // gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Desired Pitch: %.2f Current Pitch: %.2f Pitch Error: %.2f", desired_pitch_deg, pitch_deg, pitch_err);
     float pitch_rate = pitch_err / 0.05f;
 
     float pitch_rate_dps = constrain_float(pitch_rate,-plane.g.acro_pitch_rate,plane.g.acro_pitch_rate); // Time constant of 0.1 seconds for aggressive response
@@ -109,17 +109,17 @@ void ModeStrike::update()
     const float elevator = plane.pitchController.get_rate_out(pitch_rate_dps, speed_scaler);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
-    float rudder = 0;
-    if (plane.yawController.rate_control_enabled()) {
-        rudder = 0 * 45;
-        if (true) {
-            rudder += plane.yawController.get_rate_out(yaw_rate_dps, speed_scaler, false);
-        } else {
-            plane.yawController.reset_I();
-        }
-    }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
+    // float rudder = 0;
+    // if (plane.yawController.rate_control_enabled()) {
+    //     rudder = 0 * 45;
+    //     if (true) {
+    //         rudder += plane.yawController.get_rate_out(yaw_rate_dps, speed_scaler, false);
+    //     } else {
+    //         plane.yawController.reset_I();
+    //     }
+    // }
+    // SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
+    // SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 }
 

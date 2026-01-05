@@ -1209,8 +1209,20 @@ float Plane::throttle_controller()
     float pitch_rad = ahrs.get_pitch_rad();
     float thr_ff = 80.0f;
     float throttle = aparm.throttle_cruise + sin(pitch_rad) * thr_ff;
-    return constrain_float(throttle, 0, 100.0);
+    return constrain(throttle, 0.0f, 100.0f);
 }
+
+float Plane::constrain(float v, float vmin, float vmax)
+{
+    if (v < vmin) {
+        v = vmin;
+    }
+    if (v > vmax) {
+        v = vmax;
+    }
+    return v;
+}
+
 
 #if AP_SCRIPTING_ENABLED
 /*

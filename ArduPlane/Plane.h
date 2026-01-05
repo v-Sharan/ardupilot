@@ -1021,6 +1021,7 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
     float throttle_controller();
+    float constrain(float v, float vmin, float vmax);
 
     bool is_land_command(uint16_t cmd) const;
 

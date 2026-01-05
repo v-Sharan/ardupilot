@@ -460,7 +460,6 @@ void Plane::stabilize()
         const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
-        gcs().send_text(MAV_SEVERITY_WARNING,"Scripting: Roll Rate: %.2f Pitch Rate: %.2f", nav_scripting.roll_rate_dps, nav_scripting.pitch_rate_dps);
         float rudder = 0;
         if (yawController.rate_control_enabled()) {
             rudder = nav_scripting.rudder_offset_pct * 45;
@@ -470,6 +469,7 @@ void Plane::stabilize()
                 yawController.reset_I();
             }
         }
+        gcs().send_text(MAV_SEVERITY_WARNING,"Scripting: Roll Rate: %.2f Pitch Rate: %.2f Rudder: %.2f", nav_scripting.roll_rate_dps, nav_scripting.pitch_rate_dps,rudder);
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
