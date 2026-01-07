@@ -507,6 +507,7 @@ function do_knife_edge_pitch(arg1, arg2)
     if (now - knife_edge_s) < arg2 then
         -- Get current pitch
         local pitch_deg = math.deg(ahrs:get_pitch_rad())
+        
         local pitch_error = (arg1 - pitch_deg)
 
         -- Compute pitch rate using pitch error
@@ -515,9 +516,6 @@ function do_knife_edge_pitch(arg1, arg2)
         -- Keep roll stable (neutralize roll rate)
         local roll_rate = 0
 
-        -- Maintain altitude
-        target_pitch = height_PI.update(initial_height)
-        
         -- Get yaw rate and throttle
         yaw_rate = 0  -- No yaw adjustment needed
         throttle = throttle_controller()

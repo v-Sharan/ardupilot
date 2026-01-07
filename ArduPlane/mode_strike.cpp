@@ -21,6 +21,7 @@ bool ModeStrike::_enter()
     int32_t lon = plane.aparm.str_lon.get();
     
     if(lat == 0 && lon == 0) {
+        gcs().send_text(MAV_SEVERITY_INFO,"Lat: %.6f Lon: %.6f", lat / 1e7f, lon / 1e7f);
         gcs().send_text(MAV_SEVERITY_CRITICAL,"Strike WP invalid");
         return false;
     }
@@ -91,24 +92,28 @@ bool ModeStrike::_enter()
 void ModeStrike::update()
 {
     // Update strike mode logic here
-    float desired_pitch_deg = plane.aparm.str_min_dis; // Targeting a steep dive angle of -45 degrees
-    float pitch_deg = degrees(ahrs.get_pitch_rad());
-    float pitch_err = desired_pitch_deg - pitch_deg; // Targeting a steep dive angle of -desired degrees
-    // gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Desired Pitch: %.2f Current Pitch: %.2f Pitch Error: %.2f", desired_pitch_deg, pitch_deg, pitch_err);
-    float pitch_rate = pitch_err / 0.05f;
+    // float desired_pitch_deg = plane.aparm.str_min_dis; // Targeting a steep dive angle of -45 degrees
+    // float pitch_deg = degrees(ahrs.get_pitch_rad());
+    // float pitch_err = desired_pitch_deg - pitch_deg; // Targeting a steep dive angle of -desired degrees
+    // // gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Desired Pitch: %.2f Current Pitch: %.2f Pitch Error: %.2f", desired_pitch_deg, pitch_deg, pitch_err);
+    // float pitch_rate = pitch_err / 0.05f;
+    // float roll_rate = 0.0f; // No roll change
+    // float yaw_rate = 0.0f; // No yaw change
 
-    float pitch_rate_dps = constrain_float(pitch_rate,-plane.g.acro_pitch_rate,plane.g.acro_pitch_rate); // Time constant of 0.1 seconds for aggressive response
-    float roll_rate_dps = constrain_float(0.0, -plane.g.acro_roll_rate, plane.g.acro_roll_rate); // No roll change
-    float yaw_rate_dps = constrain_float(0.0, -plane.g.acro_yaw_rate, plane.g.acro_yaw_rate); // No yaw change
+    // float pitch_rate_dps = constrain_float(pitch_rate,-plane.g.acro_pitch_rate,plane.g.acro_pitch_rate); // Time constant of 0.1 seconds for aggressive response
+    // float roll_rate_dps = constrain_float(roll_rate, -plane.g.acro_roll_rate, plane.g.acro_roll_rate); // No roll change
+    // float yaw_rate_dps = constrain_float(yaw_rate, -plane.g.acro_yaw_rate, plane.g.acro_yaw_rate); // No yaw change
 
-    float throttle = plane.throttle_controller();
-    gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Pitch Rate: %.2f Roll Rate: %.2f Yaw Rate: %.2f Throttle: %.2f", pitch_rate_dps, roll_rate_dps, yaw_rate_dps, throttle);
+    // float throttle = plane.throttle_controller();
+    // float throttle_pct = constrain_float(throttle, plane.aparm.throttle_min, plane.aparm.throttle_max);
+    // plane.str_stabilize(roll_rate_dps,pitch_rate_dps,yaw_rate_dps,throttle_pct);
+    // gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Pitch Rate: %.2f Roll Rate: %.2f Yaw Rate: %.2f Throttle: %.2f", pitch_rate_dps, roll_rate_dps, yaw_rate_dps, throttle_pct);
 
-    const float speed_scaler = plane.get_speed_scaler();
-    const float aileron = plane.rollController.get_rate_out(roll_rate_dps, speed_scaler);
-    const float elevator = plane.pitchController.get_rate_out(pitch_rate_dps, speed_scaler);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
+    // const float speed_scaler = plane.get_speed_scaler();
+    // const float aileron = plane.rollController.get_rate_out(roll_rate_dps, speed_scaler);
+    // const float elevator = plane.pitchController.get_rate_out(pitch_rate_dps, speed_scaler);
+    // SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
+    // SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
     // float rudder = 0;
     // if (plane.yawController.rate_control_enabled()) {
     //     rudder = 0 * 45;
@@ -120,7 +125,26 @@ void ModeStrike::update()
     // }
     // SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
     // SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+    // SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle_pct);
+}
+
+void ModeStrike::run(){
+    float desired_pitch_deg = plane.aparm.str_min_dis; // Targeting a steep dive angle of -45 degrees
+    float pitch_deg = degrees(ahrs.get_pitch_rad());
+    gcs().send_text(MAV_SEVERITY_WARNING,"Pitch degree %.2f",pitch_deg);
+    float pitch_err = desired_pitch_deg - pitch_deg; // Targeting a steep dive angle of -desired degrees
+    // gcs().send_text(MAV_SEVERITY_WARNING,"Strike: Desired Pitch: %.2f Current Pitch: %.2f Pitch Error: %.2f", desired_pitch_deg, pitch_deg, pitch_err);
+    float pitch_rate = pitch_err / 0.05f;
+    float roll_rate = 0.0f; // No roll change
+    float yaw_rate = 0.0f; // No yaw change
+
+    float pitch_rate_dps = constrain_float(pitch_rate,-plane.g.acro_pitch_rate,plane.g.acro_pitch_rate); // Time constant of 0.1 seconds for aggressive response
+    float roll_rate_dps = constrain_float(roll_rate, -plane.g.acro_roll_rate, plane.g.acro_roll_rate); // No roll change
+    float yaw_rate_dps = constrain_float(yaw_rate, -plane.g.acro_yaw_rate, plane.g.acro_yaw_rate); // No yaw change
+
+    float throttle = plane.throttle_controller();
+    float throttle_pct = constrain_float(throttle, plane.aparm.throttle_min, plane.aparm.throttle_max);
+    plane.str_stabilize(roll_rate_dps,pitch_rate_dps,yaw_rate_dps,throttle_pct);
 }
 
 // void ModeStrike::update()

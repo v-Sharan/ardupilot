@@ -929,6 +929,7 @@ private:
     void rangefinder_terrain_correction(float &height);
 #endif
     void stabilize();
+    void str_stabilize(float roll_rate, float pitch_rate,float yaw_rate,float throttle_pct);
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
