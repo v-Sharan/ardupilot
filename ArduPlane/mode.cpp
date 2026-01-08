@@ -30,6 +30,7 @@ bool Mode::enter()
     // reset nav_scripting.enabled
     plane.nav_scripting.enabled = false;
 #endif
+    plane.Strike.isStrike = false;
 
     // cancel inverted flight
     plane.auto_state.inverted_flight = false;
@@ -326,6 +327,9 @@ bool Mode::use_throttle_limits() const
         return false;
     }
 #endif
+    if (plane.Strike.isStrike) {
+        return false;
+    }
 
     if (this == &plane.mode_stabilize ||
         this == &plane.mode_training ||
@@ -358,6 +362,9 @@ bool Mode::use_battery_compensation() const
         return false;
     }
 #endif
+    if(plane.Strike.isStrike){
+        return false;
+    }
 
     if (this == &plane.mode_stabilize ||
         this == &plane.mode_training ||

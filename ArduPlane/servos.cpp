@@ -401,6 +401,50 @@ void ModeAuto::wiggle_servos()
 
 }
 
+void ModeStrike::wiggle_servos()
+{
+    // This is only active while in AUTO running NAV_ALTITUDE_WAIT with wiggle_time > 0
+    if (wiggle.last_ms == 0) {
+        return;
+    }
+
+    int16_t servo_valueElevator;
+    int16_t servo_valueAileronRudder;
+    // Wiggle the control surfaces in stages: elevators first, then rudders + ailerons, through the full range over 4 seconds
+    if (wiggle.stage != 0) {
+        wiggle.stage += 1;
+    }
+    if (wiggle.stage == 0) {
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 25) { 
+        servo_valueElevator = wiggle.stage * (4500 / 25);      
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 75) {
+        servo_valueElevator = (50 - wiggle.stage) * (4500 / 25);        
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 100) {
+        servo_valueElevator = (wiggle.stage - 100) * (4500 / 25);        
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 125) {
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (wiggle.stage - 100) * (4500 / 25);
+    } else if (wiggle.stage < 175) {
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (150 - wiggle.stage) * (4500 / 25);  
+    } else if (wiggle.stage < 200) {
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (wiggle.stage - 200) * (4500 / 25); 
+    } else {
+        wiggle.stage = 0;
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = 0;
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_valueAileronRudder);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_valueElevator);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_valueAileronRudder);
+
+}
 
 /*
   Calculate the throttle scale to compensate for battery voltage drop

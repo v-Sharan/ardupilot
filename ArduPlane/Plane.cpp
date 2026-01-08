@@ -614,6 +614,11 @@ void Plane::update_alt()
     }
 #endif
 
+    if (Strike.isStrike) {
+        // don't call TECS while we are in Strike
+        return;
+    }
+
     bool should_run_tecs = control_mode->does_auto_throttle();
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.should_disable_TECS()) {

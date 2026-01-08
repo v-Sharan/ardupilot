@@ -457,24 +457,31 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    void navigate() override;
+    bool allows_throttle_nudging() const override { return true; }
 
-    void run() override;
+    bool does_auto_navigation() const override;
+
+    bool does_auto_throttle() const override;
+
 
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
 
-    bool does_auto_navigation() const override { return true; }
-    bool does_auto_throttle() const override { return false; }
+    void run() override;
 
 #if AP_PLANE_SYSTEMID_ENABLED
     // does this mode support fixed wing systemid?
     bool supports_fw_systemid() const override { return true; }
 #endif
 
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    bool in_pullup() const { return pullup.in_pullup(); }
+#endif
+
 protected:
 
     bool _enter() override;
+    void _exit() override;
     bool _pre_arm_checks(size_t buflen, char *buffer) const override { return true; }
 #if AP_QUICKTUNE_ENABLED
     bool supports_quicktune() const override { return true; }
@@ -483,8 +490,16 @@ protected:
 private:
     float active_radius_m;
     Location target_location;
-    bool in_terminal_dive;
-    bool strike_complete;
+    void wiggle_servos();
+
+    struct {
+        uint8_t stage;
+        uint32_t last_ms;
+    } wiggle;
+
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    GliderPullup pullup;
+#endif // AP_PLANE_GLIDER_PULLUP_ENABLED
 };
 
 

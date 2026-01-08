@@ -192,6 +192,18 @@ public:
     Plane(void);
 
 private:
+    struct {
+
+        bool isStrike;
+        float roll_rate_dps;
+        float pitch_rate_dps;
+        float yaw_rate_dps;
+        float throttle_pct;
+        uint32_t start_ms;
+        uint32_t current_ms;
+        float rudder_offset_pct;
+        bool run_yaw_rate_controller;
+    } Strike;
 
     // key aircraft parameters passed to multiple libraries
     AP_FixedWing aparm;
@@ -929,7 +941,6 @@ private:
     void rangefinder_terrain_correction(float &height);
 #endif
     void stabilize();
-    void str_stabilize(float roll_rate, float pitch_rate,float yaw_rate,float throttle_pct);
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
@@ -1022,7 +1033,6 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
     float throttle_controller();
-    float constrain(float v, float vmin, float vmax);
 
     bool is_land_command(uint16_t cmd) const;
 
@@ -1226,6 +1236,8 @@ private:
     float get_throttle_input(bool no_deadzone=false) const;
     float get_adjusted_throttle_input(bool no_deadzone=false) const;
     bool reverse_thrust_enabled(UseReverseThrust use_reverse_thrust_option) const;
+    void set_target_throttle_rate_rpy_strike(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps);
+    void set_rudder_offset_strike(float rudder_pct, bool run_yaw_rate_controller);
 
 #if AP_SCRIPTING_ENABLED
     // support for NAV_SCRIPT_TIME mission command

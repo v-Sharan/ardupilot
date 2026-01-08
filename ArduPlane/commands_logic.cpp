@@ -1209,20 +1209,21 @@ float Plane::throttle_controller()
     float pitch_rad = ahrs.get_pitch_rad();
     float thr_ff = 80.0f;
     float throttle = aparm.throttle_cruise + sin(pitch_rad) * thr_ff;
-    return constrain(throttle, 0.0f, 100.0f);
+    return constrain_float(throttle, 0.0f, 100.0f);
 }
 
-float Plane::constrain(float v, float vmin, float vmax)
+void Plane::set_rudder_offset_strike(float rudder_pct, bool run_yaw_rate_controller)
 {
-    if (v < vmin) {
-        v = vmin;
-    }
-    if (v > vmax) {
-        v = vmax;
-    }
-    return v;
+    Strike.rudder_offset_pct = rudder_pct;
+    Strike.run_yaw_rate_controller = run_yaw_rate_controller;
 }
 
+void Plane::set_target_throttle_rate_rpy_strike(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps){
+    Strike.roll_rate_dps = constrain_float(roll_rate_dps, -g.acro_roll_rate, g.acro_roll_rate);
+    Strike.pitch_rate_dps = constrain_float(pitch_rate_dps, -g.acro_pitch_rate, g.acro_pitch_rate);
+    Strike.yaw_rate_dps = constrain_float(yaw_rate_dps, -g.acro_yaw_rate, g.acro_yaw_rate);
+    Strike.throttle_pct = constrain_float(throttle_pct, aparm.throttle_min, aparm.throttle_max);
+}
 
 #if AP_SCRIPTING_ENABLED
 /*

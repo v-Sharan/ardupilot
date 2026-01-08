@@ -474,75 +474,26 @@ void Plane::stabilize()
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
 #endif
-    } else {
-        plane.control_mode->run();
-    }
-
-    /*
-      see if we should zero the attitude controller integrators. 
-     */
-    if (is_zero(get_throttle_input()) &&
-        fabsf(relative_altitude) < 5.0f && 
-        fabsf(barometer.get_climb_rate()) < 0.5f &&
-        ahrs.groundspeed() < 3) {
-        // we are low, with no climb rate, and zero throttle, and very
-        // low ground speed. Zero the attitude controller
-        // integrators. This prevents integrator buildup pre-takeoff.
-        rollController.reset_I();
-        pitchController.reset_I();
-        yawController.reset_I();
-
-        // if moving very slowly also zero the steering integrator
-        if (ahrs.groundspeed() < 1) {
-            steerController.reset_I();            
-        }
-    }
-}
-
-void Plane::str_stabilize(float roll_rate, float pitch_rate,float yaw_rate,float throttle_pct)
-{
-    uint32_t now = AP_HAL::millis();
-#if HAL_QUADPLANE_ENABLED
-    if (quadplane.available()) {
-        quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd);
-    }
-#endif
-
-#if AP_PLANE_SYSTEMID_ENABLED
-    if (plane.g2.systemid.is_running_fw()) {
-        plane.g2.systemid.fw_update();
-    }
-#endif
-
-    if (now - last_stabilize_ms > 2000) {
-        // if we haven't run the rate controllers for 2 seconds then reset
-        control_mode->reset_controllers();
-    }
-    last_stabilize_ms = now;
-
-    if (control_mode == &mode_training ||
-            control_mode == &mode_manual) {
-        plane.control_mode->run();
-    } else if (true) {
+    } else if (Strike.isStrike) {
         // scripting is in control of roll and pitch rates and throttle
         const float speed_scaler = get_speed_scaler();
-        const float aileron = rollController.get_rate_out(roll_rate, speed_scaler);
-        const float elevator = pitchController.get_rate_out(pitch_rate, speed_scaler);
+        const float aileron = rollController.get_rate_out(Strike.roll_rate_dps, speed_scaler);
+        const float elevator = pitchController.get_rate_out(Strike.pitch_rate_dps, speed_scaler);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
         float rudder = 0;
         if (yawController.rate_control_enabled()) {
-            rudder = 0 * 45;
-            if (true) {
-                rudder += yawController.get_rate_out(yaw_rate, speed_scaler, false);
+            rudder = Strike.rudder_offset_pct * 45;
+            if (Strike.run_yaw_rate_controller) {
+                rudder += yawController.get_rate_out(Strike.yaw_rate_dps, speed_scaler, false);
             } else {
                 yawController.reset_I();
             }
         }
-        gcs().send_text(MAV_SEVERITY_WARNING,"Scripting: Roll Rate: %.2f Pitch Rate: %.2f Rudder: %.2f", roll_rate, pitch_rate,rudder);
+        // gcs().send_text(MAV_SEVERITY_WARNING,"Scripting: Roll Rate: %.2f Pitch Rate: %.2f Rudder: %.2f", Strike.roll_rate_dps, Strike.pitch_rate_dps,rudder);
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle_pct);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, Strike.throttle_pct);
     } else {
         plane.control_mode->run();
     }
@@ -567,7 +518,6 @@ void Plane::str_stabilize(float roll_rate, float pitch_rate,float yaw_rate,float
         }
     }
 }
-
 
 /*
  * Set the throttle output.
