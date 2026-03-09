@@ -263,16 +263,16 @@ const AP_Param::Info Plane::var_info[] = {
     ASCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
 
     // @Param: STR_LAT
-    // @DisplayName: Strike Latitude
-    // @Description: Defines the latitude of the strike point for use in strike and attack missions.
-    // @Increment: 1
+    // @DisplayName: Strike Target Latitude
+    // @Description: Target latitude for strike point
+    // @Units: degE7
     // @User: Standard
     ASCALAR(str_lat,          "STR_LAT",  0),
 
     // @Param: STR_LON
-    // @DisplayName: Strike Longitude
-    // @Description: Defines the Longitude of the strike point for use in strike and attack missions.
-    // @Increment: 1
+    // @DisplayName: Strike Target Longitude
+    // @Description: Target longitude for strike point
+    // @Units: degE7
     // @User: Standard
     ASCALAR(str_lon,          "STR_LON",  0),
 

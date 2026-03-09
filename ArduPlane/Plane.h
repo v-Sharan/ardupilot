@@ -193,8 +193,7 @@ public:
 
 private:
     struct {
-
-        bool isStrike;
+        bool isStrikeMode;
         float roll_rate_dps;
         float pitch_rate_dps;
         float yaw_rate_dps;

@@ -457,6 +457,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void navigate() override;
+
     bool allows_throttle_nudging() const override { return true; }
 
     bool does_auto_navigation() const override;
@@ -488,7 +490,7 @@ protected:
 #endif
 
 private:
-    float active_radius_m;
+    bool isStrike;
     Location target_location;
     void wiggle_servos();
 

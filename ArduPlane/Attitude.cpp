@@ -474,7 +474,7 @@ void Plane::stabilize()
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
 #endif
-    } else if (Strike.isStrike) {
+    } else if (Strike.isStrikeMode) {
         // scripting is in control of roll and pitch rates and throttle
         const float speed_scaler = get_speed_scaler();
         const float aileron = rollController.get_rate_out(Strike.roll_rate_dps, speed_scaler);

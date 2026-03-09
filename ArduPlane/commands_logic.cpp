@@ -1207,8 +1207,10 @@ float Plane::get_wp_radius() const
 float Plane::throttle_controller()
 {
     float pitch_rad = ahrs.get_pitch_rad();
-    float thr_ff = 80.0f;
-    float throttle = aparm.throttle_cruise + sin(pitch_rad) * thr_ff;
+    float thr_ff = 100.0f;
+    float gain = sin(pitch_rad) * thr_ff;
+    float throttle = aparm.throttle_cruise + gain;
+    gcs().send_text(MAV_SEVERITY_INFO,"Pitch: %.2f Gain: %.2f Throttle: %.2f",pitch_rad,gain,throttle);
     return constrain_float(throttle, 0.0f, 100.0f);
 }
 

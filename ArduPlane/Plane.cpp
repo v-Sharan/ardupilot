@@ -614,7 +614,7 @@ void Plane::update_alt()
     }
 #endif
 
-    if (Strike.isStrike) {
+    if (Strike.isStrikeMode) {
         // don't call TECS while we are in Strike
         return;
     }
