@@ -22,7 +22,7 @@ bool ModeStrike::_enter()
     target_location.lng = lon;
     target_location.alt = loc.alt;
     
-    // plane.set_rudder_offset_strike(0,true);
+    plane.set_rudder_offset_strike(0,true);
     gcs().send_text(MAV_SEVERITY_INFO,"Lat: %.6f Lon: %.6f alt: %d",target_location.lat / 1e7f, target_location.lng / 1e7f,target_location.alt);
     plane.guided_throttle_passthru = false;
     plane.set_guided_WP(target_location);
